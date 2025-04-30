@@ -1,5 +1,5 @@
 ---
-title: "vera4cast tutoral"
+title: "vera4cast tutorial"
 author: Freya Olsson
 output:
   md_document: 
@@ -10,6 +10,8 @@ date: "`r Sys.Date()`"
 ---
 
 ```{r setup, include=FALSE}
+install.packages("knitr")
+library("knitr")
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -33,6 +35,7 @@ install.packages('remotes')
 install.packages('tidyverse') # collection of R packages for data manipulation, analysis, and visualisation
 install.packages('lubridate') # working with dates and times
 install.packages('here')
+install.packages('arrow')
 
 remotes::install_github('LTREB-reservoirs/vera4castHelpers') # package to assist with forecast submission
 ```
@@ -41,6 +44,7 @@ remotes::install_github('LTREB-reservoirs/vera4castHelpers') # package to assist
 library(tidyverse)
 library(lubridate)
 library(ggplot2); theme_set(theme_bw())
+library(arrow)
 library(vera4castHelpers)
 ```
 
@@ -112,7 +116,7 @@ If you are submitting a forecast that is not in the supported list above, we rec
 
 ## Read in the data
 
-We start forecasting by first looking at the historicalal data - called the *targets*. These data are available in near real-time, with the latency of approximately 24-48 hrs. Here is how you read in the data from the targets file available:
+We start forecasting by first looking at the historical data - called the *targets*. These data are available in near real-time, with the latency of approximately 24-48 hrs. Here is how you read in the data from the targets file:
 
 ```{r eval=TRUE, echo = TRUE, error=FALSE, warning=FALSE, message=FALSE}
 #read in the targets data
@@ -374,6 +378,7 @@ The columns `project_id`, `depth_m`, and `duration` are also needed. For a daily
 
 ```{r}
 # Remember to change the model_id when you make changes to the model structure!
+# But retain 'example' as part of the model_id until you are ready to register!
 model_id <- 'example_ID'
 
 forecast_df_standard <- forecast_df %>%

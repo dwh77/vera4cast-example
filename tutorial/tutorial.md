@@ -49,6 +49,7 @@ install.packages('remotes')
 install.packages('tidyverse') # collection of R packages for data manipulation, analysis, and visualisation
 install.packages('lubridate') # working with dates and times
 install.packages('here')
+install.packages('arrow')
 
 remotes::install_github('LTREB-reservoirs/vera4castHelpers') # package to assist with forecast submission
 ```
@@ -58,11 +59,11 @@ library(tidyverse)
 ```
 
     ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-    ## ✔ dplyr     1.1.3     ✔ readr     2.1.4
+    ## ✔ dplyr     1.1.4     ✔ readr     2.1.5
     ## ✔ forcats   1.0.0     ✔ stringr   1.5.1
-    ## ✔ ggplot2   3.5.0     ✔ tibble    3.2.1
-    ## ✔ lubridate 1.9.3     ✔ tidyr     1.3.1
-    ## ✔ purrr     1.0.2     
+    ## ✔ ggplot2   3.5.2     ✔ tibble    3.2.1
+    ## ✔ lubridate 1.9.4     ✔ tidyr     1.3.1
+    ## ✔ purrr     1.0.4     
     ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
     ## ✖ dplyr::filter() masks stats::filter()
     ## ✖ dplyr::lag()    masks stats::lag()
@@ -71,6 +72,21 @@ library(tidyverse)
 ``` r
 library(lubridate)
 library(ggplot2); theme_set(theme_bw())
+library(arrow)
+```
+
+    ## 
+    ## Attaching package: 'arrow'
+    ## 
+    ## The following object is masked from 'package:lubridate':
+    ## 
+    ##     duration
+    ## 
+    ## The following object is masked from 'package:utils':
+    ## 
+    ##     timestamp
+
+``` r
 library(vera4castHelpers)
 ```
 
@@ -188,10 +204,10 @@ documentation](https://www.ltreb-reservoirs.org/vera4cast/instructions.html#fore
 
 ## 3.1 Read in the data
 
-We start forecasting by first looking at the historicalal data - called
+We start forecasting by first looking at the historical data - called
 the *targets*. These data are available in near real-time, with the
 latency of approximately 24-48 hrs. Here is how you read in the data
-from the targets file available:
+from the targets file:
 
 ``` r
 #read in the targets data
@@ -211,7 +227,7 @@ site_list <- read_csv("https://raw.githubusercontent.com/LTREB-reservoirs/vera4c
 
 Let’s take a look at the targets data!
 
-    ## Rows: 126,674
+    ## Rows: 158,910
     ## Columns: 7
     ## $ project_id  <chr> "vera4cast", "vera4cast", "vera4cast", "vera4cast", "vera4…
     ## $ site_id     <chr> "fcre", "fcre", "fcre", "fcre", "fcre", "fcre", "fcre", "f…
@@ -259,16 +275,21 @@ targets |> distinct(variable) |> pull()
     ## [21] "Secchi_m_sample"                     
     ## [22] "MOM_binary_sample"                   
     ## [23] "ThermoclineDepth_m_mean"             
-    ## [24] "CO2flux_umolm2s_mean"                
-    ## [25] "CH4flux_umolm2s_mean"                
-    ## [26] "TN_ugL_sample"                       
-    ## [27] "TP_ugL_sample"                       
-    ## [28] "NH4_ugL_sample"                      
-    ## [29] "NO3NO2_ugL_sample"                   
-    ## [30] "SRP_ugL_sample"                      
-    ## [31] "DOC_mgL_sample"                      
-    ## [32] "CH4_umolL_sample"                    
-    ## [33] "CO2_umolL_sample"
+    ## [24] "SchmidtStability_Jm2_mean"           
+    ## [25] "CO2flux_umolm2s_mean"                
+    ## [26] "CH4flux_umolm2s_mean"                
+    ## [27] "TN_ugL_sample"                       
+    ## [28] "TP_ugL_sample"                       
+    ## [29] "NH4_ugL_sample"                      
+    ## [30] "NO3NO2_ugL_sample"                   
+    ## [31] "SRP_ugL_sample"                      
+    ## [32] "DOC_mgL_sample"                      
+    ## [33] "DIC_mgL_sample"                      
+    ## [34] "DC_mgL_sample"                       
+    ## [35] "DN_mgL_sample"                       
+    ## [36] "CH4_umolL_sample"                    
+    ## [37] "CO2_umolL_sample"                    
+    ## [38] "DRSI_mgL_sample"
 
 There are a number of different physical, chemical, and biological
 variables with observations at fcre. We will start by just looking at
@@ -362,7 +383,7 @@ historical_weather <- historical_weather_s3  |>
 historical_weather
 ```
 
-    ## # A tibble: 990,295 × 7
+    ## # A tibble: 1,243,999 × 7
     ##    parameter datetime            variable   prediction family reference_datetime
     ##        <dbl> <dttm>              <chr>           <dbl> <chr>  <lgl>             
     ##  1         0 2020-10-01 00:00:00 air_tempe…       286. ensem… NA                
@@ -375,7 +396,7 @@ historical_weather
     ##  8         7 2020-10-01 00:00:00 air_tempe…       286. ensem… NA                
     ##  9         8 2020-10-01 00:00:00 air_tempe…       286. ensem… NA                
     ## 10         9 2020-10-01 00:00:00 air_tempe…       286. ensem… NA                
-    ## # ℹ 990,285 more rows
+    ## # ℹ 1,243,989 more rows
     ## # ℹ 1 more variable: site_id <chr>
 
 This is an hourly stacked ensemble of the one day ahead forecasts. We
@@ -393,7 +414,7 @@ historical_weather <- historical_weather |>
 historical_weather
 ```
 
-    ## # A tibble: 1,332 × 4
+    ## # A tibble: 1,673 × 4
     ##    datetime   site_id variable        prediction
     ##    <date>     <chr>   <chr>                <dbl>
     ##  1 2020-10-01 fcre    air_temperature       287.
@@ -406,7 +427,7 @@ historical_weather
     ##  8 2020-10-08 fcre    air_temperature       290.
     ##  9 2020-10-09 fcre    air_temperature       286.
     ## 10 2020-10-10 fcre    air_temperature       287.
-    ## # ℹ 1,322 more rows
+    ## # ℹ 1,663 more rows
 
 ### 4.1.2 Download future weather forecasts
 
@@ -434,16 +455,16 @@ future_weather
     ## # A tibble: 25,327 × 7
     ##    parameter datetime            variable        prediction family   site_id
     ##        <dbl> <dttm>              <chr>                <dbl> <chr>    <chr>  
-    ##  1         0 2024-05-24 00:00:00 air_temperature       293. ensemble fcre   
-    ##  2         0 2024-05-24 01:00:00 air_temperature       292. ensemble fcre   
-    ##  3         0 2024-05-24 02:00:00 air_temperature       291. ensemble fcre   
-    ##  4         0 2024-05-24 03:00:00 air_temperature       290. ensemble fcre   
-    ##  5         0 2024-05-24 04:00:00 air_temperature       290. ensemble fcre   
-    ##  6         0 2024-05-24 05:00:00 air_temperature       290. ensemble fcre   
-    ##  7         0 2024-05-24 06:00:00 air_temperature       289. ensemble fcre   
-    ##  8         0 2024-05-24 07:00:00 air_temperature       289. ensemble fcre   
-    ##  9         0 2024-05-24 08:00:00 air_temperature       289. ensemble fcre   
-    ## 10         0 2024-05-24 09:00:00 air_temperature       289. ensemble fcre   
+    ##  1         2 2025-05-02 08:00:00 air_temperature       288. ensemble fcre   
+    ##  2         2 2025-05-02 09:00:00 air_temperature       287. ensemble fcre   
+    ##  3         2 2025-05-02 10:00:00 air_temperature       288. ensemble fcre   
+    ##  4         2 2025-05-02 11:00:00 air_temperature       288. ensemble fcre   
+    ##  5         2 2025-05-02 12:00:00 air_temperature       289. ensemble fcre   
+    ##  6         2 2025-05-02 13:00:00 air_temperature       291. ensemble fcre   
+    ##  7         2 2025-05-02 14:00:00 air_temperature       292. ensemble fcre   
+    ##  8         2 2025-05-02 15:00:00 air_temperature       294. ensemble fcre   
+    ##  9         2 2025-05-02 16:00:00 air_temperature       296. ensemble fcre   
+    ## 10         2 2025-05-02 17:00:00 air_temperature       298. ensemble fcre   
     ## # ℹ 25,317 more rows
     ## # ℹ 1 more variable: reference_datetime <dttm>
 
@@ -510,12 +531,12 @@ tail(targets_lm)
     ## # A tibble: 6 × 7
     ##   project_id site_id datetime            duration depth_m Temp_C_mean
     ##   <chr>      <chr>   <dttm>              <chr>      <dbl>       <dbl>
-    ## 1 vera4cast  fcre    2024-05-18 00:00:00 P1D          1.6        19.7
-    ## 2 vera4cast  fcre    2024-05-19 00:00:00 P1D          1.6        19.7
-    ## 3 vera4cast  fcre    2024-05-20 00:00:00 P1D          1.6        20.4
-    ## 4 vera4cast  fcre    2024-05-21 00:00:00 P1D          1.6        20.7
-    ## 5 vera4cast  fcre    2024-05-22 00:00:00 P1D          1.6        21.5
-    ## 6 vera4cast  fcre    2024-05-23 00:00:00 P1D          1.6        21.7
+    ## 1 vera4cast  fcre    2025-04-17 00:00:00 P1D          1.6        13.5
+    ## 2 vera4cast  fcre    2025-04-18 00:00:00 P1D          1.6        14.0
+    ## 3 vera4cast  fcre    2025-04-19 00:00:00 P1D          1.6        15.3
+    ## 4 vera4cast  fcre    2025-04-20 00:00:00 P1D          1.6        16.8
+    ## 5 vera4cast  fcre    2025-04-21 00:00:00 P1D          1.6        16.9
+    ## 6 vera4cast  fcre    2025-04-22 00:00:00 P1D          1.6        18.4
     ## # ℹ 1 more variable: air_temperature <dbl>
 
 To fit the linear model, we use the base R `lm()` but there are also
@@ -543,7 +564,7 @@ print(fit)
     ## 
     ## Coefficients:
     ##                (Intercept)  targets_lm$air_temperature  
-    ##                      5.250                       0.758
+    ##                     5.2188                      0.7801
 
 ``` r
 coeff <- fit$coefficients
@@ -575,16 +596,16 @@ forecast_df
     ## # A tibble: 961 × 5
     ##    datetime   site_id parameter prediction variable   
     ##    <date>     <chr>       <dbl>      <dbl> <chr>      
-    ##  1 2024-05-24 fcre            0       21.2 Temp_C_mean
-    ##  2 2024-05-24 fcre            1       20.0 Temp_C_mean
-    ##  3 2024-05-24 fcre            2       20.2 Temp_C_mean
-    ##  4 2024-05-24 fcre            3       20.6 Temp_C_mean
-    ##  5 2024-05-24 fcre            4       20.4 Temp_C_mean
-    ##  6 2024-05-24 fcre            5       20.4 Temp_C_mean
-    ##  7 2024-05-24 fcre            6       21.9 Temp_C_mean
-    ##  8 2024-05-24 fcre            7       19.8 Temp_C_mean
-    ##  9 2024-05-24 fcre            8       20.0 Temp_C_mean
-    ## 10 2024-05-24 fcre            9       20.2 Temp_C_mean
+    ##  1 2025-04-30 fcre            0       20.3 Temp_C_mean
+    ##  2 2025-04-30 fcre            1       20.1 Temp_C_mean
+    ##  3 2025-04-30 fcre            2       20.8 Temp_C_mean
+    ##  4 2025-04-30 fcre            3       19.8 Temp_C_mean
+    ##  5 2025-04-30 fcre            4       20.4 Temp_C_mean
+    ##  6 2025-04-30 fcre            5       19.2 Temp_C_mean
+    ##  7 2025-04-30 fcre            6       20.3 Temp_C_mean
+    ##  8 2025-04-30 fcre            7       19.5 Temp_C_mean
+    ##  9 2025-04-30 fcre            8       19.4 Temp_C_mean
+    ## 10 2025-04-30 fcre            9       20.0 Temp_C_mean
     ## # ℹ 951 more rows
 
 We now have 31 possible forecasts of water temperature at each site and
@@ -616,6 +637,7 @@ forecast at the focal depth only (1.6 m).
 
 ``` r
 # Remember to change the model_id when you make changes to the model structure!
+# But retain 'example' as part of the model_id until you are ready to register!
 model_id <- 'example_ID'
 
 forecast_df_standard <- forecast_df %>%
@@ -659,7 +681,7 @@ if (dir.exists(save_here)) {
 vera4castHelpers::forecast_output_validator(forecast_file = forecast_file)
 ```
 
-    ## Forecasts/2024-05-24-example_ID.csv
+    ## Forecasts/2025-04-30-example_ID.csv
 
     ## ✔ file has model_id column
     ## ✔ forecasted variables found correct variable + prediction column
