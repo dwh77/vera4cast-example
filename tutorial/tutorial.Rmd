@@ -10,7 +10,7 @@ date: "`r Sys.Date()`"
 ---
 
 ```{r setup, include=FALSE}
-install.packages("knitr")
+install.packages("knitr", repos = "http://cran.us.r-project.org")
 library("knitr")
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -120,14 +120,14 @@ We start forecasting by first looking at the historical data - called the *targe
 
 ```{r eval=TRUE, echo = TRUE, error=FALSE, warning=FALSE, message=FALSE}
 #read in the targets data
-targets <- readr::read_csv('amnh1.osn.mghpcc.org/bio230121-bucket01/vera4cast/targets/project_id=vera4cast/duration=P1D/daily-insitu-targets.csv.gz')
+targets <- readr::read_csv('https://amnh1.osn.mghpcc.org/bio230121-bucket01/vera4cast/targets/project_id=vera4cast/duration=P1D/daily-insitu-targets.csv.gz')
 ```
 
 Information on the VERA sites can be found in the `vera4cast_field_site_metadata.csv` file on GitHub. This table has information about the field sites, including location, reservoir depth, and surface area.
 
 ```{r eval=TRUE, echo = TRUE, error=FALSE, warning=FALSE, message=FALSE}
 # read in the sites data
-site_list <- reader::read_csv("https://raw.githubusercontent.com/LTREB-reservoirs/vera4cast/main/vera4cast_field_site_metadata.csv",
+site_list <- readr::read_csv("https://raw.githubusercontent.com/LTREB-reservoirs/vera4cast/main/vera4cast_field_site_metadata.csv",
                       show_col_types = FALSE)
 ```
 
