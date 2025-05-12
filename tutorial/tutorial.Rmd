@@ -30,6 +30,8 @@ To complete the tutorial via this markdown document, the following R packages wi
 
 The following code chunk should be run to install packages.
 
+If you do not wish to run the code yourself, you can alternatively follow along via the markdown document (tutorial.md).
+
 ```{r eval = F}
 install.packages('remotes')
 install.packages('tidyverse') # collection of R packages for data manipulation, analysis, and visualisation
@@ -47,8 +49,6 @@ library(ggplot2); theme_set(theme_bw())
 library(arrow)
 library(vera4castHelpers)
 ```
-
-If you do not wish to run the code yourself, you can alternatively follow along via the markdown document (tutorial.md).
 
 # Introduction to VERA Forecast Challenge
 
@@ -120,21 +120,21 @@ We start forecasting by first looking at the historical data - called the *targe
 
 ```{r eval=TRUE, echo = TRUE, error=FALSE, warning=FALSE, message=FALSE}
 #read in the targets data
-targets <- read_csv('https://renc.osn.xsede.org/bio230121-bucket01/vera4cast/targets/project_id=vera4cast/duration=P1D/daily-insitu-targets.csv.gz')
+targets <- readr::read_csv('amnh1.osn.mghpcc.org/bio230121-bucket01/vera4cast/targets/project_id=vera4cast/duration=P1D/daily-insitu-targets.csv.gz')
 ```
 
 Information on the VERA sites can be found in the `vera4cast_field_site_metadata.csv` file on GitHub. This table has information about the field sites, including location, reservoir depth, and surface area.
 
 ```{r eval=TRUE, echo = TRUE, error=FALSE, warning=FALSE, message=FALSE}
 # read in the sites data
-site_list <- read_csv("https://raw.githubusercontent.com/LTREB-reservoirs/vera4cast/main/vera4cast_field_site_metadata.csv",
+site_list <- reader::read_csv("https://raw.githubusercontent.com/LTREB-reservoirs/vera4cast/main/vera4cast_field_site_metadata.csv",
                       show_col_types = FALSE)
 ```
 
 Let's take a look at the targets data!
 
 ```{r eval = T, echo = F}
-glimpse(targets)
+pillar::glimpse(targets)
 
 ```
 
