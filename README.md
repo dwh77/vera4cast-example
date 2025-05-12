@@ -62,3 +62,9 @@ There are 3 options for getting the code locally so that you can run it, dependi
 -   Open `tutorial/tutorial.Rmd`. 
 
 More information on forking and cloning in R can be found at [happygitwithr](https://happygitwithr.com/fork-and-clone.html), a great resource to get you started using version control with RStudio.
+
+## 2. Run the tutorial
+
+The tutorial will get you started generating ecological forecasts, specifically for submission to the Virginia Ecoforecast Reservoir Analysis (VERA) Forecast Challenge. The materials are modified from those initially developed for the EFI-NEON Forecast Challenge (found [here](https://zenodo.org/records/8316966)). To learn more about the VERA Forecast Challenge (see our [website](https://www.ltreb-reservoirs.org/vera4cast/)).
+
+You will read in and visualize ecological data, fit an ecological forecast model, access and visualize weather forecasts to drive your model, generate an ecological forecast, and submit that forecast to VERA.
