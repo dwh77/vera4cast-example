@@ -9,10 +9,10 @@
     -   [3.2 Visualize the data](#visualize-the-data)
 -   [4 Introducing co-variates](#introducing-co-variates)
     -   [4.1 Download co-variates](#download-co-variates)
-        -   [4.1.1 Download historical weather
-            forecasts](#download-historical-weather-forecasts)
-        -   [4.1.2 Download future weather
-            forecasts](#download-future-weather-forecasts)
+        -   [4.1.1 Download historical weather forecasts (stage
+            3)](#download-historical-weather-forecasts-stage-3)
+        -   [4.1.2 Download future weather forecasts (stage
+            2)](#download-future-weather-forecasts-stage-2)
 -   [5 Linear model with co-variates](#linear-model-with-co-variates)
     -   [5.1 Convert to forecast standard for
         submission](#convert-to-forecast-standard-for-submission)
@@ -28,8 +28,8 @@ ecological forecasts, specifically for submission to the Virginia
 Ecoforecast Reservoir Analysis (VERA) Forecast Challenge. The materials
 are modified from those initially developed for the EFI-NEON Forecast
 Challenge (found [here](https://zenodo.org/records/8316966)). To learn
-more about the VERA Forecast Challenge (see our
-[website](https://www.ltreb-reservoirs.org/vera4cast/)).
+more about the VERA Forecast Challenge, see our
+[website](https://www.ltreb-reservoirs.org/vera4cast/).
 
 The development of these materials has been supported by NSF grants
 DEB-2327030, DEB-1926388, and DBI-1933016.
@@ -43,6 +43,9 @@ packages will need to be installed first:
 -   `vera4castHelpers` (from Github)
 
 The following code chunk should be run to install packages.
+
+If you do not wish to run the code yourself, you can alternatively
+follow along via the markdown document (tutorial.md).
 
 ``` r
 install.packages('remotes')
@@ -61,7 +64,7 @@ library(tidyverse)
     ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
     ## ✔ dplyr     1.1.4     ✔ readr     2.1.5
     ## ✔ forcats   1.0.0     ✔ stringr   1.5.1
-    ## ✔ ggplot2   3.5.2     ✔ tibble    3.2.1
+    ## ✔ ggplot2   3.5.1     ✔ tibble    3.2.1
     ## ✔ lubridate 1.9.4     ✔ tidyr     1.3.1
     ## ✔ purrr     1.0.4     
     ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
@@ -89,9 +92,6 @@ library(arrow)
 ``` r
 library(vera4castHelpers)
 ```
-
-If you do not wish to run the code yourself, you can alternatively
-follow along via the markdown document (tutorial.md).
 
 # 2 Introduction to VERA Forecast Challenge
 
@@ -163,7 +163,7 @@ The file is a csv format with the following columns:
     the parameter values in the parameter column. For an ensemble
     forecast, the `family` column uses the word `ensemble` to designate
     that it is a ensemble forecast and the parameter column is the
-    ensemble member number (1, 2, 3 …). For a distribution forecast, the
+    ensemble member number (1, 2, 3…). For a distribution forecast, the
     `family` describes the type of distribution. For a parametric
     forecast with a normal distribution, the `family` column uses the
     word `normal` to designate a normal distribution and the parameter
@@ -211,7 +211,7 @@ from the targets file:
 
 ``` r
 #read in the targets data
-targets <- read_csv('https://renc.osn.xsede.org/bio230121-bucket01/vera4cast/targets/project_id=vera4cast/duration=P1D/daily-insitu-targets.csv.gz')
+targets <- readr::read_csv('https://amnh1.osn.mghpcc.org/bio230121-bucket01/vera4cast/targets/project_id=vera4cast/duration=P1D/daily-insitu-targets.csv.gz')
 ```
 
 Information on the VERA sites can be found in the
@@ -221,13 +221,13 @@ and surface area.
 
 ``` r
 # read in the sites data
-site_list <- read_csv("https://raw.githubusercontent.com/LTREB-reservoirs/vera4cast/main/vera4cast_field_site_metadata.csv",
+site_list <- readr::read_csv("https://raw.githubusercontent.com/LTREB-reservoirs/vera4cast/main/vera4cast_field_site_metadata.csv",
                       show_col_types = FALSE)
 ```
 
 Let’s take a look at the targets data!
 
-    ## Rows: 158,910
+    ## Rows: 159,930
     ## Columns: 7
     ## $ project_id  <chr> "vera4cast", "vera4cast", "vera4cast", "vera4cast", "vera4…
     ## $ site_id     <chr> "fcre", "fcre", "fcre", "fcre", "fcre", "fcre", "fcre", "f…
@@ -238,9 +238,9 @@ Let’s take a look at the targets data!
     ## $ observation <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
 
 The columns of the targets file show the time step (duration, P1D), the
-4 character site code (`site_id`), the variable being measured, and the
-mean daily observation. We will start by just looking at Falling Creek
-Reservoir (`fcre`).
+four character site code (`site_id`), the variable being measured, and
+the mean daily observation. We will start by just looking at Falling
+Creek Reservoir (`fcre`).
 
 ``` r
 site_list <- site_list %>%
@@ -310,14 +310,14 @@ alt="Figure: Temperature targets data at FCR" />
 FCR</figcaption>
 </figure>
 
-We can think about what type of models might be useful to predict water
+We can think about which type of models might be useful to predict water
 temperature. Below are descriptions of three simple models to get you
 started forecasting:
 
 -   We could use information about current conditions to predict the
     next day. What is happening today is usually a good predictor of
     what will happen tomorrow (persistence model).
--   We could also think about what the historical data tells us about
+-   We could also think about what the historical data tell us about
     reservoir dynamics this time of year. For example, conditions in
     January this year are likely to be similar to January last year
     (climatology/day-of-year model)
@@ -326,7 +326,7 @@ started forecasting:
     weather to generate forecasts about the reservoir variables.
 
 To start, we will produce forecasts for just one of these depths - the
-focal depth at fcre, 1.6 m.
+focal surface layer monitoring depth at fcre, 1.6 m.
 
 ``` r
 targets <- targets %>%
@@ -336,38 +336,40 @@ targets <- targets %>%
 # 4 Introducing co-variates
 
 One important step to overcome when thinking about generating forecasts
-is to include co-variates in the model. A water temperature forecast,
-for example, may be benefit from information about past and future
-weather. The `vera4castHelpers` package includes functions for
-downloading past and future NOAA weather forecasts for the VERA sites.
-The 3 types of data are as follows:
+is to include co-variates (driver variables) in the model. A water
+temperature forecast, for example, may be benefit from information about
+past and future weather. The `vera4castHelpers` package includes
+functions for downloading past and future NOAA weather forecasts for the
+VERA sites. The 3 types of weather data available are as follows:
 
--   stage_1: raw forecasts - 31 member ensemble forecasts at 3 hr
-    intervals for the first 10 days, and 6 hr intervals for up to 35
-    days at the NEON sites.
+-   stage_1: raw weather forecasts - 31-member ensemble forecasts at
+    3-hr intervals for the first 10 days, and 6-hr intervals for up to
+    35 days at the VERA site.
 -   stage_2: a processed version of Stage 1 in which fluxes are
     standardized to per second rates, fluxes and states are interpolated
-    to 1 hour intervals and variables are renamed to match conventions.
-    We recommend this for obtaining future weather. Future weather
-    forecasts include a 30-member ensemble of equally likely future
-    weather conditions.
--   stage_3: can be viewed as the “historical” weather and is
+    to 1-hour intervals, and variables are renamed to match conventions.
+    We recommend using these data for including forecasted weather as a
+    co-variate in your model. Future weather forecasts include a
+    31-member ensemble of equally likely future weather conditions.
+-   stage_3: can be viewed as the “historical” weather and is a
     combination of day 1 weather forecasts (i.e., when the forecasts are
     most accurate).
 
-This code create a connection to the dataset hosted remotely at an S3
-storage location. To download the data you have to tell the function to
-`collect()` it. These data set can be subsetted and filtered using
-`dplyr` functions prior to download to limit the memory usage.
+This code creates a remote connection to the dataset, which is hosted
+remotely at an S3 storage location in the cloud. To download the data,
+you have to tell the function to `collect()` it. These datasets can be
+subsetted and filtered using `dplyr` functions prior to download to
+limit the memory usage.
 
 ## 4.1 Download co-variates
 
-### 4.1.1 Download historical weather forecasts
+### 4.1.1 Download historical weather forecasts (stage 3)
 
 We will generate a water temperature forecast using `air_temperature` as
-a co-variate. The following code chunk connects to the remote location,
-filters the dataset to the sites and variables of interest and then
-collects into our local environment.
+a co-variate. The following code chunk connects to the remote s3
+location, filters the stage 3 forecasted weather dataset to the sites
+and variables of interest, and then collects the data into our local
+environment.
 
 ``` r
 # past stacked weather
@@ -383,7 +385,7 @@ historical_weather <- historical_weather_s3  |>
 historical_weather
 ```
 
-    ## # A tibble: 1,243,999 × 7
+    ## # A tibble: 1,255,903 × 7
     ##    parameter datetime            variable   prediction family reference_datetime
     ##        <dbl> <dttm>              <chr>           <dbl> <chr>  <lgl>             
     ##  1         0 2020-10-01 00:00:00 air_tempe…       286. ensem… NA                
@@ -396,13 +398,13 @@ historical_weather
     ##  8         7 2020-10-01 00:00:00 air_tempe…       286. ensem… NA                
     ##  9         8 2020-10-01 00:00:00 air_tempe…       286. ensem… NA                
     ## 10         9 2020-10-01 00:00:00 air_tempe…       286. ensem… NA                
-    ## # ℹ 1,243,989 more rows
+    ## # ℹ 1,255,893 more rows
     ## # ℹ 1 more variable: site_id <chr>
 
-This is an hourly stacked ensemble of the one day ahead forecasts. We
+This is an hourly stacked ensemble of the one day-ahead forecasts. We
 can take a mean of these ensembles to get an estimate of mean daily
-historical conditions. For the historical data we do not need the
-individual ensemble members, and will train with the ensemble mean.
+historical conditions. For the historical data, we will calculate the
+ensemble mean and do not need the individual ensemble members.
 
 ``` r
 # aggregate the past to mean values
@@ -414,7 +416,7 @@ historical_weather <- historical_weather |>
 historical_weather
 ```
 
-    ## # A tibble: 1,673 × 4
+    ## # A tibble: 1,689 × 4
     ##    datetime   site_id variable        prediction
     ##    <date>     <chr>   <chr>                <dbl>
     ##  1 2020-10-01 fcre    air_temperature       287.
@@ -427,13 +429,13 @@ historical_weather
     ##  8 2020-10-08 fcre    air_temperature       290.
     ##  9 2020-10-09 fcre    air_temperature       286.
     ## 10 2020-10-10 fcre    air_temperature       287.
-    ## # ℹ 1,663 more rows
+    ## # ℹ 1,679 more rows
 
-### 4.1.2 Download future weather forecasts
+### 4.1.2 Download future weather forecasts (stage 2)
 
-We can then look at the future weather forecasts in the same way but
-using the `noaa_stage2()`. The forecast becomes available from NOAA at
-5am UTC the following day, so we need to use the air temperature
+We can then look at the future weather forecasts (stage 2) in the same
+way but using the `noaa_stage2()`. The forecast becomes available from
+NOAA at 5am UTC the following day, so we need to use the air temperature
 forecast from yesterday (`noaa_date`) to make our real-time water
 quality forecasts.
 
@@ -455,24 +457,23 @@ future_weather
     ## # A tibble: 25,327 × 7
     ##    parameter datetime            variable        prediction family   site_id
     ##        <dbl> <dttm>              <chr>                <dbl> <chr>    <chr>  
-    ##  1         2 2025-05-02 08:00:00 air_temperature       288. ensemble fcre   
-    ##  2         2 2025-05-02 09:00:00 air_temperature       287. ensemble fcre   
-    ##  3         2 2025-05-02 10:00:00 air_temperature       288. ensemble fcre   
-    ##  4         2 2025-05-02 11:00:00 air_temperature       288. ensemble fcre   
-    ##  5         2 2025-05-02 12:00:00 air_temperature       289. ensemble fcre   
-    ##  6         2 2025-05-02 13:00:00 air_temperature       291. ensemble fcre   
-    ##  7         2 2025-05-02 14:00:00 air_temperature       292. ensemble fcre   
-    ##  8         2 2025-05-02 15:00:00 air_temperature       294. ensemble fcre   
-    ##  9         2 2025-05-02 16:00:00 air_temperature       296. ensemble fcre   
-    ## 10         2 2025-05-02 17:00:00 air_temperature       298. ensemble fcre   
+    ##  1         0 2025-05-16 00:00:00 air_temperature       294. ensemble fcre   
+    ##  2         0 2025-05-16 01:00:00 air_temperature       293. ensemble fcre   
+    ##  3         0 2025-05-16 02:00:00 air_temperature       292. ensemble fcre   
+    ##  4         0 2025-05-16 03:00:00 air_temperature       291. ensemble fcre   
+    ##  5         0 2025-05-16 04:00:00 air_temperature       291. ensemble fcre   
+    ##  6         0 2025-05-16 05:00:00 air_temperature       291. ensemble fcre   
+    ##  7         0 2025-05-16 06:00:00 air_temperature       290. ensemble fcre   
+    ##  8         0 2025-05-16 07:00:00 air_temperature       291. ensemble fcre   
+    ##  9         0 2025-05-16 08:00:00 air_temperature       291. ensemble fcre   
+    ## 10         0 2025-05-16 09:00:00 air_temperature       291. ensemble fcre   
     ## # ℹ 25,317 more rows
     ## # ℹ 1 more variable: reference_datetime <dttm>
 
-We can use the individual ensemble member in our model to include driver
-uncertainty in the water temperature forecast. To generate a daily water
-temperature forecast, we will use a daily water temperature to train and
-run our model. This is calculated from the hourly data we have but
-retains the ensemble members as a source of driver uncertainty.
+As above, we calculate a daily mean of the forecasted weather data as
+input into our model. We can also use the individual 31 ensemble members
+of the forecasted NOAA weather data to represent driver data uncertainty
+in our water temperature forecast.
 
 ``` r
 # aggregate the past to mean values
@@ -510,11 +511,11 @@ future_weather <- future_weather |>
 # 5 Linear model with co-variates
 
 We will fit a simple linear model between historical air temperature and
-the water temperature targets data. Using this model we can then use our
+the water temperature targets data for our example. We can then use our
 future forecasts of air temperature (all 31 ensembles from NOAA GEFS) to
-estimate water temperature. The ensemble weather forecast will therefore
-propagate uncertainty into the water temperature forecast and give an
-estimate of driver data uncertainty.
+estimate water temperature with this model. The ensemble weather
+forecast will therefore propagate uncertainty into the water temperature
+forecast and give an estimate of driver data uncertainty.
 
 We will start by joining the historical weather data with the targets to
 aid in fitting the linear model.
@@ -531,12 +532,12 @@ tail(targets_lm)
     ## # A tibble: 6 × 7
     ##   project_id site_id datetime            duration depth_m Temp_C_mean
     ##   <chr>      <chr>   <dttm>              <chr>      <dbl>       <dbl>
-    ## 1 vera4cast  fcre    2025-04-17 00:00:00 P1D          1.6        13.5
-    ## 2 vera4cast  fcre    2025-04-18 00:00:00 P1D          1.6        14.0
-    ## 3 vera4cast  fcre    2025-04-19 00:00:00 P1D          1.6        15.3
-    ## 4 vera4cast  fcre    2025-04-20 00:00:00 P1D          1.6        16.8
-    ## 5 vera4cast  fcre    2025-04-21 00:00:00 P1D          1.6        16.9
-    ## 6 vera4cast  fcre    2025-04-22 00:00:00 P1D          1.6        18.4
+    ## 1 vera4cast  fcre    2025-05-10 00:00:00 P1D          1.6        20.0
+    ## 2 vera4cast  fcre    2025-05-11 00:00:00 P1D          1.6        19.4
+    ## 3 vera4cast  fcre    2025-05-12 00:00:00 P1D          1.6        19.5
+    ## 4 vera4cast  fcre    2025-05-13 00:00:00 P1D          1.6        18.7
+    ## 5 vera4cast  fcre    2025-05-14 00:00:00 P1D          1.6        18.2
+    ## 6 vera4cast  fcre    2025-05-15 00:00:00 P1D          1.6        17.9
     ## # ℹ 1 more variable: air_temperature <dbl>
 
 To fit the linear model, we use the base R `lm()` but there are also
@@ -564,7 +565,7 @@ print(fit)
     ## 
     ## Coefficients:
     ##                (Intercept)  targets_lm$air_temperature  
-    ##                     5.2188                      0.7801
+    ##                     5.2388                      0.7809
 
 ``` r
 coeff <- fit$coefficients
@@ -596,24 +597,27 @@ forecast_df
     ## # A tibble: 961 × 5
     ##    datetime   site_id parameter prediction variable   
     ##    <date>     <chr>       <dbl>      <dbl> <chr>      
-    ##  1 2025-04-30 fcre            0       20.3 Temp_C_mean
-    ##  2 2025-04-30 fcre            1       20.1 Temp_C_mean
-    ##  3 2025-04-30 fcre            2       20.8 Temp_C_mean
-    ##  4 2025-04-30 fcre            3       19.8 Temp_C_mean
-    ##  5 2025-04-30 fcre            4       20.4 Temp_C_mean
-    ##  6 2025-04-30 fcre            5       19.2 Temp_C_mean
-    ##  7 2025-04-30 fcre            6       20.3 Temp_C_mean
-    ##  8 2025-04-30 fcre            7       19.5 Temp_C_mean
-    ##  9 2025-04-30 fcre            8       19.4 Temp_C_mean
-    ## 10 2025-04-30 fcre            9       20.0 Temp_C_mean
+    ##  1 2025-05-16 fcre            0       21.8 Temp_C_mean
+    ##  2 2025-05-16 fcre            1       21.8 Temp_C_mean
+    ##  3 2025-05-16 fcre            2       22.2 Temp_C_mean
+    ##  4 2025-05-16 fcre            3       22.6 Temp_C_mean
+    ##  5 2025-05-16 fcre            4       21.9 Temp_C_mean
+    ##  6 2025-05-16 fcre            5       22.5 Temp_C_mean
+    ##  7 2025-05-16 fcre            6       21.4 Temp_C_mean
+    ##  8 2025-05-16 fcre            7       22.1 Temp_C_mean
+    ##  9 2025-05-16 fcre            8       21.3 Temp_C_mean
+    ## 10 2025-05-16 fcre            9       22.1 Temp_C_mean
     ## # ℹ 951 more rows
 
-We now have 31 possible forecasts of water temperature at each site and
-each day. On this plot each line represents one of the possible
-forecasts and the range of forecasted water temperature is a simple
-quantification of the uncertainty in our forecast.
+We now have 31 future predictions of water temperature at each site and
+each day (derived from the 31 stage 2 weather ensemble members). When
+these predictions are combined together, we now have an ensemble
+forecast that represents driver data uncertainty. On this plot, each
+line represents one of the possible predictions and the range of
+forecasted water temperature is a simple quantification of the
+uncertainty in our forecast.
 
-Looking at the forecasts we produced:
+Looking at the forecast we produced:
 
 ![](tutorial_files/figure-markdown_github/wq-forecast-1.png)
 
@@ -632,7 +636,7 @@ A reminder of the columns needed for an ensemble forecast:
     we don’t need to register!
 
 The columns `project_id`, `depth_m`, and `duration` are also needed. For
-a daily forecast the duration is `P1D`. We produced a water temperature
+a daily forecast, the duration is `P1D`. We produced a water temperature
 forecast at the focal depth only (1.6 m).
 
 ``` r
@@ -681,10 +685,12 @@ if (dir.exists(save_here)) {
 vera4castHelpers::forecast_output_validator(forecast_file = forecast_file)
 ```
 
-    ## Forecasts/2025-04-30-example_ID.csv
+    ## Forecasts/2025-05-16-example_ID.csv
 
+    ## ✔ file name is in valid format
     ## ✔ file has model_id column
     ## ✔ forecasted variables found correct variable + prediction column
+    ## ✔ The forecasted variables are included in official list of targets
     ## ✔ file has correct family and parameter columns
     ## ✔ file has site_id column
     ## ✔ file has datetime column
@@ -708,7 +714,8 @@ Is the linear model a reasonable relationship between air temperature
 and water temperature? Would a non-linear relationship be better? What
 about using yesterday’s air and water temperatures to predict tomorrow?
 Or including additional parameters? There’s a lot of variability in
-water temperatures unexplained by air temperature alone.
+water temperatures unexplained by air temperature alone that provide a
+starting place for future models.
 
 ![](tutorial_files/figure-markdown_github/linear-model-1.png)
 
